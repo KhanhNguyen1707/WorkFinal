@@ -5,25 +5,20 @@ const router = express.Router();
 // Fetch product details by ID
 router.get("/books/:id", (req, res) => {
   const { id } = req.params;
-
-  // SQL query to fetch a single product by ID
   let sql = "SELECT * FROM books WHERE ID = ?";
   db.query(sql, [id], (err, product) => {
     if (err) {
       console.error("Error fetching product:", err);
       return res.status(500).send("Server error");
     }
-
-    // If no product is found
     if (product.length === 0) {
       return res.status(404).send("Product not found");
     }
-
-    res.json(product[0]); // Return the first (and only) result since we're querying by ID
+    res.json(product[0]);
   });
 });
 
-// Fetch featured products (latest 9 products by ReleaseDate)
+// Fetch featured products
 router.get("/featured-books", (req, res) => {
   let sql = "SELECT * FROM books ORDER BY ReleaseDate DESC LIMIT 9";
   db.query(sql, (err, featuredProducts) => {
@@ -31,7 +26,6 @@ router.get("/featured-books", (req, res) => {
       console.error("Error fetching featured products:", err);
       return res.status(500).send("Server error");
     }
-
     res.json(featuredProducts);
   });
 });
@@ -46,7 +40,7 @@ router.post("/cart/add", (req, res) => {
 
   // Query for the most recent cart for the user
   db.query(
-    "SELECT CartID FROM cart WHERE UserID = ? ORDER BY CreatedAt DESC LIMIT 1",
+    "SELECT ID FROM cart WHERE UserID = ? ORDER BY CreatedAt DESC LIMIT 1",
     [userId],
     (err, result) => {
       if (err) {
@@ -55,19 +49,21 @@ router.post("/cart/add", (req, res) => {
       }
 
       let cartId;
-
       if (result.length === 0) {
-        // Create a new cart if none exists
-        db.query("INSERT INTO cart (UserID) VALUES (?)", [userId], (err, insertResult) => {
-          if (err) {
-            console.error("Failed to create a new cart:", err);
-            return res.status(500).send("Failed to create a new cart.");
+        db.query(
+          "INSERT INTO cart (UserID) VALUES (?)",
+          [userId],
+          (err, insertResult) => {
+            if (err) {
+              console.error("Failed to create a new cart:", err);
+              return res.status(500).send("Failed to create a new cart.");
+            }
+            cartId = insertResult.insertId;
+            addOrUpdateCartItem(cartId);
           }
-          cartId = insertResult.insertId;
-          addOrUpdateCartItem(cartId);
-        });
+        );
       } else {
-        cartId = result[0].CartID;
+        cartId = result[0].ID;
         addOrUpdateCartItem(cartId);
       }
 
@@ -83,8 +79,8 @@ router.post("/cart/add", (req, res) => {
             }
 
             if (existingCartItem.length > 0) {
-              // Update the quantity if item already exists in cart
-              const newQuantity = existingCartItem[0].Quantity + parseInt(quantity);
+              const newQuantity =
+                existingCartItem[0].Quantity + parseInt(quantity);
               db.query(
                 "UPDATE cartitems SET Quantity = ? WHERE CartID = ? AND BookID = ?",
                 [newQuantity, cartId, bookId],
@@ -97,7 +93,6 @@ router.post("/cart/add", (req, res) => {
                 }
               );
             } else {
-              // Insert new item into the cart
               db.query(
                 "INSERT INTO cartitems (CartID, BookID, Quantity, Price) VALUES (?, ?, ?, (SELECT Price FROM books WHERE ID = ?))",
                 [cartId, bookId, quantity, bookId],
@@ -116,11 +111,5 @@ router.post("/cart/add", (req, res) => {
     }
   );
 });
-
-
-
-
-
-
 
 module.exports = router;
