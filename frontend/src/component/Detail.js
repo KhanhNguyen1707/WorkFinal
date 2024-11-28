@@ -1,18 +1,25 @@
 import React, { useEffect, useState } from "react";
 import OwlCarousel from "react-owl-carousel";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Footer from "./Footer";
 import Header from "./Header";
 
 const Detail = () => {
-  const { id } = useParams(); // Get book ID from URL params
+  const { id } = useParams();
   const { currentUser } = useAuth();
   const [product, setProduct] = useState(null);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
   const [quantity, setQuantity] = useState(1);
+
+  const navigate = useNavigate();
+
+  const handleBackToShopClick = (e) => {
+    e.preventDefault();
+    window.location.href = "/product";
+  };
 
   useEffect(() => {
     // Fetch book details
@@ -71,8 +78,28 @@ const Detail = () => {
     }
   };
 
-  if (loadingProduct) return <p>Loading product details...</p>;
-  if (!product) return <p>Product not found.</p>;
+  // Ensure OwlCarousel initializes after the component has mounted
+  useEffect(() => {
+    const $ = window.$; // Ensure jQuery is accessible
+    if ($ && featuredProducts.length > 0) {
+      // Initialize OwlCarousel only if it's not already initialized
+      const owl = $(".owl-carousel").data("owl.carousel");
+      if (!owl) {
+        $(".owl-carousel").owlCarousel({
+          loop: true,
+          margin: 10,
+          nav: true,
+          dots: true,
+          autoplay: true,
+          responsive: {
+            0: { items: 1 },
+            600: { items: 2 },
+            1000: { items: 3 },
+          },
+        });
+      }
+    }
+  }, [featuredProducts]);
 
   return (
     <>
@@ -84,7 +111,7 @@ const Detail = () => {
               <h2>Shop Detail</h2>
               <ul className="breadcrumb">
                 <li className="breadcrumb-item">
-                  <Link to="/product">Shop</Link>
+                  <a href="/product">Shop</a>
                 </li>
                 <li className="breadcrumb-item active">Shop Detail</li>
               </ul>
@@ -96,18 +123,21 @@ const Detail = () => {
         <div className="container">
           <div className="row">
             <div className="col-xl-5 col-lg-5 col-md-6">
-              <img
-                className="d-block w-100"
-                src={product.Img}
-                alt={product.Title}
-              />
+              {product && (
+                <img
+                  className="img-fluid w-75 mx-auto d-block"
+                  src={product.Img}
+                  alt={product.Title}
+                />
+              )}
             </div>
+
             <div className="col-xl-7 col-lg-7 col-md-6">
               <div className="single-product-details">
-                <h2>{product.Title}</h2>
-                <h5>${product.Price}</h5>
+                <h2>{product ? product.Title : "Loading..."}</h2>
+                <h5>{product ? `$${product.Price}` : "Loading..."}</h5>
                 <h4>Short Description:</h4>
-                <p>{product.Description}</p>
+                <p>{product ? product.Description : "Loading..."}</p>
                 <div className="form-group quantity-box">
                   <label className="control-label">Quantity</label>
                   <input
@@ -116,69 +146,75 @@ const Detail = () => {
                     min={1}
                     max={20}
                     type="number"
-                    onChange={(e) => setQuantity(e.target.value)}
+                    onChange={(e) => {
+                      const value = Math.max(1, Math.min(20, e.target.value));
+                      setQuantity(value);
+                    }}
                   />
                 </div>
-                <button
-                  className="btn hvr-hover"
-                  onClick={addToCart}
-                  disabled={loadingProduct || !product.ID}
-                >
-                  Add to cart
-                </button>
-                <div className="add-to-btn">
-                  <Link to="/product" className="btn hvr-hover">
+
+                <div className="d-flex justify-content-between">
+                  <button
+                    className="btn hvr-hover text-white"
+                    onClick={addToCart}
+                    disabled={loadingProduct || !product?.ID}
+                  >
+                    Add to cart
+                  </button>
+                  <Link
+                    to="/product"
+                    className="btn hvr-hover text-white"
+                    onClick={handleBackToShopClick}
+                  >
                     Back to shop
                   </Link>
                 </div>
               </div>
             </div>
           </div>
+
           {/* Start Featured Products Section */}
           <div className="title-all text-center">
             <h1>Featured Products</h1>
           </div>
-          {loadingFeatured ? (
-            <p>Loading featured products...</p>
-          ) : (
-            <OwlCarousel
-              className="featured-products-box"
-              items={3}
-              margin={10}
-              nav
-              dots
-              loop
-              autoplay
-            >
-              {featuredProducts.length > 0 ? (
-                featuredProducts.map((featured) => (
-                  <div className="item" key={featured.ID}>
-                    <div className="products-single fix">
-                      <div className="box-img-hover">
+          <OwlCarousel
+            className="owl-carousel featured-products-box"
+            items={3} // Default for larger screens
+            margin={10}
+            nav
+            dots
+            loop
+            autoplay
+            responsive={{
+              0: { items: 1 },
+              600: { items: 2 },
+              1000: { items: 3 },
+            }}
+          >
+            {featuredProducts.length > 0 ? (
+              featuredProducts.map((featured) => (
+                <div className="item" key={featured.ID}>
+                  <div className="products-single fix">
+                    <div className="box-img-hover">
+                      {/* Clicking on image or title will redirect to product detail */}
+                      <Link to={`/detail/${featured.ID}`}>
                         <img src={featured.Img} alt={featured.Title} />
-                        <div className="mask-icon">
-                          <ul>
-                            <li>
-                              <Link to={`/detail/${featured.ID}`}>
-                                <i className="fas fa-eye" />
-                              </Link>
-                            </li>
-                          </ul>
-                          <a className="cart">Add to Cart</a>
-                        </div>
-                      </div>
-                      <div className="why-text">
+                      </Link>
+                    </div>
+                    <div className="why-text">
+                      {/* Clicking on title will redirect to product detail */}
+                      <Link to={`/detail/${featured.ID}`}>
                         <h4>{featured.Title}</h4>
-                        <h5>${featured.Price}</h5>
-                      </div>
+                      </Link>
+                      <h5>${featured.Price}</h5>
                     </div>
                   </div>
-                ))
-              ) : (
-                <p>No featured products available</p>
-              )}
-            </OwlCarousel>
-          )}
+                </div>
+              ))
+            ) : (
+              <p>No featured products available</p>
+            )}
+          </OwlCarousel>
         </div>
       </div>
       <Footer />

@@ -45,7 +45,7 @@ const Product = () => {
 
   return (
     <>
-      <Header></Header>
+      <Header />
 
       {/* Start Top Search */}
       <div className="top-search">
@@ -77,7 +77,7 @@ const Product = () => {
               <h2>Shop</h2>
               <ul className="breadcrumb">
                 <li className="breadcrumb-item">
-                  <a href="#">Home</a>
+                  <a href="/">Home</a>
                 </li>
                 <li className="breadcrumb-item active">Shop</li>
               </ul>
@@ -114,13 +114,11 @@ const Product = () => {
                   </form>
                 </div>
                 {/* Categories */}
-                {/* Categories */}
                 <div className="filter-sidebar-left">
                   <div className="title-left">
                     <h3>Categories</h3>
                   </div>
                   <div className="list-group">
-                    {/* Option to display all categories */}
                     <a
                       className="list-group-item list-group-item-action"
                       href=""
@@ -159,7 +157,7 @@ const Product = () => {
                       Sort by{" "}
                       <select
                         id="basic"
-                        className="selectpicker show-tick form-control."
+                        className="selectpicker show-tick form-control"
                         value={sortOption}
                         onChange={(e) => setSortOption(e.target.value)}
                       >
@@ -179,26 +177,25 @@ const Product = () => {
                       </select>
                     </div>
                   </div>
+
                   <div className="col-12 col-sm-4 text-center text-sm-right">
                     <ul className="nav nav-tabs ml-auto">
                       <li>
                         <a
-                          className="nav-link active"
+                          className="nav-link active d-none d-sm-block"
                           href="#grid-view"
                           data-toggle="tab"
                         >
-                          {" "}
-                          <i className="fa fa-th" />{" "}
+                          <i className="fa fa-th" />
                         </a>
                       </li>
                       <li>
                         <a
-                          className="nav-link"
+                          className="nav-link d-none d-sm-block"
                           href="#list-view"
                           data-toggle="tab"
                         >
-                          {" "}
-                          <i className="fa fa-list-ul" />{" "}
+                          <i className="fa fa-list-ul" />
                         </a>
                       </li>
                     </ul>
@@ -221,34 +218,24 @@ const Product = () => {
                           >
                             <div className="products-single fix">
                               <div className="box-img-hover">
-                                <img
-                                  src={book.Img}
-                                  className="img-fluid"
-                                  alt={book.Title}
-                                />
-                                <div className="mask-icon">
-                                  <ul>
-                                    <li>
-                                      <Link
-                                        to={`/detail/${book.ID}`}
-                                        data-toggle="tooltip"
-                                        data-placement="right"
-                                        title="View"
-                                      >
-                                        <i className="fas fa-eye" />
-                                      </Link>
-                                    </li>
-                                    {/* Other actions */}
-                                  </ul>
-                                  <a className="cart" href="#">
-                                    Add to Cart
-                                  </a>
-                                </div>
+                                <Link to={`/detail/${book.ID}`}>
+                                  <img
+                                    src={book.Img}
+                                    className="img-fluid"
+                                    alt={book.Title}
+                                  />
+                                </Link>
                               </div>
                               <div className="why-text">
-                                <h4>{book.Title}</h4>
+                                <Link to={`/detail/${book.ID}`}>
+                                  <h4>{book.Title}</h4>
+                                </Link>
                                 <h5>${book.Price}</h5>
-                                <p>{book.Description}</p>
+                                <p>
+                                  {book.Description.length > 100
+                                    ? `${book.Description.slice(0, 100)}...`
+                                    : book.Description}
+                                </p>
                               </div>
                             </div>
                           </div>
@@ -267,20 +254,29 @@ const Product = () => {
                             key={book.ID}
                           >
                             <div className="products-single fix">
-                              <div className="box-img-hover">
-                                <img
-                                  src={book.Img}
-                                  className="img-fluid"
-                                  alt={book.Title}
-                                />
-                              </div>
-                              <div className="why-text">
-                                <h4>{book.Title}</h4>
-                                <h5>${book.Price}</h5>
-                                <p>{book.Description}</p>
-                                <a className="cart" href="#">
-                                  Add to Cart
-                                </a>
+                              <div className="row">
+                                {/* Product Image on the left */}
+                                <div className="col-md-4">
+                                  <Link to={`/detail/${book.ID}`}>
+                                    <img
+                                      src={book.Img}
+                                      className="img-fluid"
+                                      alt={book.Title}
+                                    />
+                                  </Link>
+                                </div>
+                                {/* Product Info on the right */}
+                                <div className="col-md-8">
+                                  <Link to={`/detail/${book.ID}`}>
+                                    <h4>{book.Title}</h4>
+                                  </Link>
+                                  <h5>${book.Price}</h5>
+                                  <p>
+                                    {book.Description.length > 100
+                                      ? `${book.Description.slice(0, 100)}...`
+                                      : book.Description}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -291,31 +287,57 @@ const Product = () => {
                 </div>
 
                 {/* Pagination */}
-                <div className="pagination-box">
+                <div className="pagination-box d-flex justify-content-center w-100">
                   <ul className="pagination">
-                    {Array.from({ length: totalPages }, (_, i) => (
-                      <li
-                        key={i + 1}
-                        className={`page-item ${
-                          currentPage === i + 1 ? "active" : ""
-                        }`}
-                        onClick={() => setCurrentPage(i + 1)}
+                    <li className="page-item">
+                      <button
+                        className="page-link"
+                        onClick={() =>
+                          setCurrentPage(currentPage > 1 ? currentPage - 1 : 1)
+                        }
                       >
-                        <a className="page-link" href="#">
-                          {i + 1}
-                        </a>
+                        Previous
+                      </button>
+                    </li>
+                    {[...Array(totalPages)].map((_, index) => (
+                      <li
+                        key={index}
+                        className={`page-item ${
+                          currentPage === index + 1 ? "active" : ""
+                        }`}
+                      >
+                        <button
+                          className="page-link"
+                          onClick={() => setCurrentPage(index + 1)}
+                        >
+                          {index + 1}
+                        </button>
                       </li>
                     ))}
+                    <li className="page-item">
+                      <button
+                        className="page-link"
+                        onClick={() =>
+                          setCurrentPage(
+                            currentPage < totalPages
+                              ? currentPage + 1
+                              : totalPages
+                          )
+                        }
+                      >
+                        Next
+                      </button>
+                    </li>
                   </ul>
                 </div>
-                {/* End Pagination */}
               </div>
             </div>
           </div>
         </div>
       </div>
       {/* End Shop Page */}
-      <Footer></Footer>
+
+      <Footer />
     </>
   );
 };

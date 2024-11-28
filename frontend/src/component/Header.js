@@ -1,16 +1,53 @@
 import "jquery-ui/themes/base/all.css";
 import "jquery-ui/ui/widgets/slider";
-import React from "react";
-import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
-import { useAuth } from "../context/AuthContext"; // Import your useAuth hook
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
 
 const Header = () => {
-  const { currentUser, logout } = useAuth(); // Use the useAuth hook
-  const navigate = useNavigate(); // Initialize navigate
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [cartItemCount, setCartItemCount] = useState(0);
+
+  useEffect(() => {
+    if (currentUser) {
+      axios
+        .get(
+          `http://localhost:5000/cart/cart/total?userId=${currentUser.ID}`
+        )
+        .then((response) => {
+          setCartItemCount(response.data.totalItems);
+        })
+        .catch((error) => {
+          console.error("Error fetching cart total:", error);
+        });
+    }
+  }, [currentUser]);
 
   const handleLogout = () => {
-    logout(); // Call the logout function
-    navigate("/"); // Redirect to home after logout
+    logout();
+    navigate("/");
+  };
+
+  const handleHomeClick = (e) => {
+    e.preventDefault();
+    window.location.href = "/";
+  };
+
+  const handleStoreClick = (e) => {
+    e.preventDefault();
+    window.location.href = "/product";
+  };
+
+  const handleCartClick = (e) => {
+    e.preventDefault();
+    navigate("/cart");
+  };
+
+  const isActive = (path) => {
+    return location.pathname === path ? "active" : "";
   };
 
   return (
@@ -22,13 +59,13 @@ const Header = () => {
               <div className="custom-select-box"></div>
               <div className="right-phone-box">
                 <p>
-                  Call US :- <a href="#"> </a>
+                  Call US : 0386106329
                 </p>
               </div>
               <div className="our-link">
                 <ul>
                   <li>
-                    <Link to="/my-account">My Account</Link>
+                    <Link to="/profile">My Account</Link>
                   </li>
                   <li>
                     <Link to="/location">Our Location</Link>
@@ -61,7 +98,7 @@ const Header = () => {
               >
                 <i className="fa fa-bars" />
               </button>
-              <Link className="navbar-brand" to="/">
+              <Link className="navbar-brand" to="/" onClick={handleHomeClick}>
                 <img
                   src="images/logo.jpg"
                   width={120}
@@ -79,37 +116,63 @@ const Header = () => {
                 data-in="fadeInDown"
                 data-out="fadeOutUp"
               >
-                <li className="nav-item active">
-                  <Link className="nav-link" to="/">
+                <li className={`nav-item ${isActive("/")}`}>
+                  <Link className="nav-link" to="/" onClick={handleHomeClick}>
                     Home
                   </Link>
                 </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="#">
-                    Our Service
+                <li className={`nav-item ${isActive("/product")}`}>
+                  <Link
+                    className="nav-link"
+                    to="/product"
+                    onClick={handleStoreClick}
+                  >
+                    Store
                   </Link>
                 </li>
-                <li className="nav-item">
+                <li className={`nav-item ${isActive("/contact")}`}>
                   <Link className="nav-link" to="/contact">
                     Contact Us
                   </Link>
                 </li>
+                {/* Conditionally Render Admin Menu */}
+                {currentUser?.Role === "admin" && (
+                  <li className={`nav-item ${isActive("/managehome")}`}>
+                    <Link className="nav-link" to="/managehome">
+                      Admin
+                    </Link>
+                  </li>
+                )}
                 {/* Welcome and Logout Links */}
                 {currentUser && (
                   <li
-                    className="nav-item"
-                    style={{ display: "flex", alignItems: "center" }}
+                    className="nav-item d-flex align-items-center"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      whiteSpace: "nowrap",
+                    }}
                   >
                     <span
-                      className="navbar-text"
+                      className="navbar-text me-3"
                       style={{
                         fontWeight: "bold",
                         color: "black",
                         fontSize: "1.1em",
-                        marginRight: "10px", // Space between welcome and logout
                       }}
                     >
-                      Welcome, {currentUser.Name}
+                      Welcome,{" "}
+                      <Link
+                        to="/profile"
+                        style={{
+                          fontWeight: "bold",
+                          color: "black",
+                          fontSize: "1.1em",
+                          textDecoration: "none",
+                        }}
+                      >
+                        {currentUser.Name}
+                      </Link>
                     </span>
                     <Link
                       className="nav-link"
@@ -128,7 +191,8 @@ const Header = () => {
               </ul>
             </div>
             {/* /.navbar-collapse */}
-            {/* Start Attribute Navigation */}
+
+            {/* Start Attribute Navigation (User and Cart Icons) */}
             <div
               className="attr-nav d-flex align-items-center"
               style={{ marginLeft: "auto" }}
@@ -142,40 +206,26 @@ const Header = () => {
                   margin: 0,
                 }}
               >
-                <li className="user">
-                  {currentUser ? (
-                    <Link to="#" onClick={handleLogout}></Link>
-                  ) : (
+                {/* Conditionally Render User Icon */}
+                {!currentUser && (
+                  <li className="user" style={{ marginRight: "20px" }}>
                     <Link to="/login">
                       <i className="fa fa-user" />
                     </Link>
-                  )}
-                </li>
-                <li className="side-menu">
-                  <Link to="/cart">
+                  </li>
+                )}
+                <li className="cart" style={{ marginRight: "20px" }}>
+                  {/* Make sure cart icon does not trigger the sidebar */}
+                  <Link to="/cart" onClick={handleCartClick}>
                     <i className="fa fa-shopping-bag" />
-                    <span className="badge">0</span>
+                    <span className="badge">{cartItemCount}</span>{" "}
+                    {/* Dynamic Cart Item Count */}
                   </Link>
                 </li>
               </ul>
             </div>
             {/* End Attribute Navigation */}
           </div>
-          {/* Start Side Menu */}
-          <div className="side">
-            <a href="#" className="close-side">
-              <i className="fa fa-times" />
-            </a>
-            <li className="cart-box">
-              <ul className="cart-list">
-                <li></li>
-                <li></li>
-                <li></li>
-                <li className="total"></li>
-              </ul>
-            </li>
-          </div>
-          {/* End Side Menu */}
         </nav>
         {/* End Navigation */}
       </header>
